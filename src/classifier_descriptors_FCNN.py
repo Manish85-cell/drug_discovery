@@ -24,15 +24,14 @@ from keras.utils import *
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import RepeatedStratifiedKFold
-from keras.layers.advanced_activations import *
+from keras.layers import *
 from keras.optimizers import *
 from keras.callbacks import *
 from sklearn.model_selection import GridSearchCV as GSCV
 from sklearn.model_selection import StratifiedKFold as SKF
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-session = tf.Session()
-K.set_session(session)
+
 
 
 # Function to save best result
@@ -57,30 +56,30 @@ def sigmoid_to_binary(predicted_labels):
 # Sensitivity
 def sensitivity(y_true,y_pred):
     y_pred=math_ops.round(y_pred)
-    TP = tf.count_nonzero(y_pred * y_true)
-    TN = tf.count_nonzero((y_pred - 1) * (y_true - 1))
-    FP = tf.count_nonzero(y_pred * (y_true - 1))
-    FN = tf.count_nonzero((y_pred - 1) * y_true)
+    TP = tf.math.count_nonzero(y_pred * y_true)
+    TN = tf.math.count_nonzero((y_pred - 1) * (y_true - 1))
+    FP = tf.math.count_nonzero(y_pred * (y_true - 1))
+    FN = tf.math.count_nonzero((y_pred - 1) * y_true)
     metric=tf.divide(TP,TP+FN)
     return metric
 
 # Specificity
 def specificity(y_true,y_pred):
     y_pred=math_ops.round(y_pred)
-    TP = tf.count_nonzero(y_pred * y_true)
-    TN = tf.count_nonzero((y_pred - 1) * (y_true - 1))
-    FP = tf.count_nonzero(y_pred * (y_true - 1))
-    FN = tf.count_nonzero((y_pred - 1) * y_true)
+    TP = tf.math.count_nonzero(y_pred * y_true)
+    TN = tf.math.count_nonzero((y_pred - 1) * (y_true - 1))
+    FP = tf.math.count_nonzero(y_pred * (y_true - 1))
+    FN = tf.math.count_nonzero((y_pred - 1) * y_true)
     metric=tf.divide(TN,TN+FP)
     return metric
 
 # F1-Score
 def f1_score(y_true,y_pred):
     y_pred=math_ops.round(y_pred)
-    TP = tf.count_nonzero(y_pred * y_true)
-    TN = tf.count_nonzero((y_pred - 1) * (y_true - 1))
-    FP = tf.count_nonzero(y_pred * (y_true - 1))
-    FN = tf.count_nonzero((y_pred - 1) * y_true)
+    TP = tf.math.count_nonzero(y_pred * y_true)
+    TN = tf.math.count_nonzero((y_pred - 1) * (y_true - 1))
+    FP = tf.math.count_nonzero(y_pred * (y_true - 1))
+    FN = tf.math.count_nonzero((y_pred - 1) * y_true)
     metric=tf.divide(TN,TN+FP)
     precision = tf.divide(TP,TP + FP)
     sensitivity = tf.divide(TP,TP+FN)
@@ -191,7 +190,9 @@ if __name__=='__main__':
     data_train=scaler.transform(data_train)
     data_test=scaler.transform(data_test)
 
-
+    # Check and adjust the size
+    if data_train.shape[0] != labels_train.shape[0]:
+        min_samples = min(data_train.shape[0], labels_train.shape[0])
     # Paramters for grid search
     metric_type=['accuracy',sensitivity,specificity,f1_score]
     fc_1_size=[128,256,512,1024]

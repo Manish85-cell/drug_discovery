@@ -24,7 +24,7 @@ from keras.utils import *
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import RepeatedStratifiedKFold
-from keras.layers.advanced_activations import *
+from keras.layers import *
 from keras.optimizers import *
 from keras.callbacks import *
 from sklearn.model_selection import GridSearchCV as GSCV
