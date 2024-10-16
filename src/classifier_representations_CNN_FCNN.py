@@ -24,15 +24,14 @@ from keras.utils import *
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import RepeatedStratifiedKFold
-from keras.layers.advanced_activations import *
+from keras.layers import *
 from keras.optimizers import *
 from keras.callbacks import *
 from sklearn.model_selection import GridSearchCV as GSCV
 from sklearn.model_selection import StratifiedKFold as SKF
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-session = tf.Session()
-K.set_session(session)
+
 
 # Function to save best result
 def save_func(file_path,values):
@@ -121,28 +120,28 @@ def generate_optimizers(lr_rate):
 #Sensitivity
 def sensitivity(y_true,y_pred):
     y_pred=math_ops.round(y_pred)
-    TP = tf.count_nonzero(y_pred * y_true)
-    TN = tf.count_nonzero((y_pred - 1) * (y_true - 1))
-    FP = tf.count_nonzero(y_pred * (y_true - 1))
-    FN = tf.count_nonzero((y_pred - 1) * y_true)
+    TP = tf.math.count_nonzero(y_pred * y_true)
+    TN = tf.math.count_nonzero((y_pred - 1) * (y_true - 1))
+    FP = tf.math.count_nonzero(y_pred * (y_true - 1))
+    FN = tf.math.count_nonzero((y_pred - 1) * y_true)
     metric=tf.divide(TP,TP+FN)
     return metric
 # Specificity
 def specificity(y_true,y_pred):
     y_pred=math_ops.round(y_pred)
-    TP = tf.count_nonzero(y_pred * y_true)
-    TN = tf.count_nonzero((y_pred - 1) * (y_true - 1))
-    FP = tf.count_nonzero(y_pred * (y_true - 1))
-    FN = tf.count_nonzero((y_pred - 1) * y_true)
+    TP = tf.math.count_nonzero(y_pred * y_true)
+    TN = tf.math.count_nonzero((y_pred - 1) * (y_true - 1))
+    FP = tf.math.count_nonzero(y_pred * (y_true - 1))
+    FN = tf.math.count_nonzero((y_pred - 1) * y_true)
     metric=tf.divide(TN,TN+FP)
     return metric
 # F1-Score
 def f1_score(y_true,y_pred):
     y_pred=math_ops.round(y_pred)
-    TP = tf.count_nonzero(y_pred * y_true)
-    TN = tf.count_nonzero((y_pred - 1) * (y_true - 1))
-    FP = tf.count_nonzero(y_pred * (y_true - 1))
-    FN = tf.count_nonzero((y_pred - 1) * y_true)
+    TP = tf.math.count_nonzero(y_pred * y_true)
+    TN = tf.math.count_nonzero((y_pred - 1) * (y_true - 1))
+    FP = tf.math.count_nonzero(y_pred * (y_true - 1))
+    FN = tf.math.count_nonzero((y_pred - 1) * y_true)
     metric=tf.divide(TN,TN+FP)
     precision = tf.divide(TP,TP + FP)
     sensitivity = tf.divide(TP,TP+FN)
@@ -287,7 +286,7 @@ def cnn_classifier(prot_data,smile_data,labels,prot_val,smile_val,labels_val,pro
 
     #Callbacks
     early_stopping=EarlyStopping(monitor='val_f1_score', min_delta=0, patience=50, verbose=0, mode='max',restore_best_weights=True)
-    model_checkpoint=ModelCheckpoint(filepath=path,monitor='val_f1_score', verbose=0, save_best_only=True, save_weights_only=False, mode='max', period=1)
+    model_checkpoint=ModelCheckpoint(filepath=path,monitor='val_f1_score', verbose=0, save_best_only=True, save_weights_only=False, mode='max', save_freq='epoch')
    
 
     if option_validation:
@@ -351,11 +350,11 @@ if __name__ == '__main__':
 
    
    #Sequences and SMILES to integers
-   prot_train_data=data_conversion(prot_train,prot_dictionary,1205)
-   prot_test_data=data_conversion(prot_test,prot_dictionary,1205)
+   prot_train_data=data_conversion(prot_train,prot_dictionary,300)
+   prot_test_data=data_conversion(prot_test,prot_dictionary,300)
 
-   smile_train_data=data_conversion(drug_train,smile_dictionary,90)
-   smile_test_data=data_conversion(drug_test,smile_dictionary,90)
+   smile_train_data=data_conversion(drug_train,smile_dictionary,40)
+   smile_test_data=data_conversion(drug_test,smile_dictionary,40)
 
    ## Labels
    labels_train=np.load('../Labels/labels_train.npy')
@@ -364,54 +363,120 @@ if __name__ == '__main__':
 
 
 
-   # _________________Parameters______________________
-   # Protein and Smile Length
-   prot_seq_len=1205
-   smile_len=90
-   ## Protein and Smile Dictionary Length
-   prot_dict_size=len(prot_dictionary)
-   smile_dict_size=len(smile_dictionary)
-   ## Number of filters of the convolutional layers
-   num_filters=[48,32,64,96,128]
-   ## Size of the embedding vector 
-   embedding_size=[0]
-   ## Size of the filter windows
-   prot_filter_window=[2,3,4,5,6]
-   smile_filter_window=[2,3,4,5,6]
-   ## Activation functions
-   act_func_conv='relu'
-   fc_act_func='relu'
-   ## Drop Rate
-   drop_rate=[0.1,0.3,0.5,0.7]
-   ## Batch Size
-   batch=256
-   ## Number of Epochs
-   epochs=500
-   ## FC Layer size
-   fc_size=[32,64,128,256,512,1024]
-   ## Number of Convolution Layers
-   number_cov_layers=3
-   ## Number of Fully Connected Layers
-   number_fc_layers=3
-   ## Learning Rate
-   learning_rate=[0.0001,0.001,0.01,0.1]
-   ## Loss Functions
-   loss_func='binary_crossentropy'
-   ## Output Activation Function
-   output_act='sigmoid'
-   ## Metrics
-   metric_type=['accuracy',sensitivity,specificity,f1_score]
-   ## Enconding type
-   encoding_type='one_hot'
+#    # _________________Parameters______________________
+#    # Protein and Smile Length
+#    prot_seq_len=1205
+#    smile_len=90
+#    ## Protein and Smile Dictionary Length
+#    prot_dict_size=len(prot_dictionary)
+#    smile_dict_size=len(smile_dictionary)
+#    ## Number of filters of the convolutional layers
+#    num_filters=[48,32,64,96,128]
+#    ## Size of the embedding vector 
+#    embedding_size=[0]
+#    ## Size of the filter windows
+#    prot_filter_window=[2,3,4,5,6]
+#    smile_filter_window=[2,3,4,5,6]
+#    ## Activation functions
+#    act_func_conv='relu'
+#    fc_act_func='relu'
+#    ## Drop Rate
+#    drop_rate=[0.1,0.3,0.5,0.7]
+#    ## Batch Size
+#    batch=256
+#    ## Number of Epochs
+#    epochs=500
+#    ## FC Layer size
+#    fc_size=[32,64,128,256,512,1024]
+#    ## Number of Convolution Layers
+#    number_cov_layers=3
+#    ## Number of Fully Connected Layers
+#    number_fc_layers=3
+#    ## Learning Rate
+#    learning_rate=[0.0001,0.001,0.01,0.1]
+#    ## Loss Functions
+#    loss_func='binary_crossentropy'
+#    ## Output Activation Function
+#    output_act='sigmoid'
+#    ## Metrics
+#    metric_type=['accuracy',sensitivity,specificity,f1_score]
+#    ## Enconding type
+#    encoding_type='one_hot'
 
 
-   grid_search(prot_train_data,smile_train_data,labels_train,prot_test_data,smile_test_data,labels_test,number_cov_layers,number_fc_layers,prot_seq_len,smile_len,prot_dict_size,smile_dict_size,encoding_type,embedding_size,
-   num_filters,drop_rate,batch,learning_rate,prot_filter_window,prot_filter_window,prot_filter_window,[0],[0],smile_filter_window,smile_filter_window,smile_filter_window,
-   [0],[0],fc_size,fc_size,fc_size,[0],act_func_conv,fc_act_func,epochs,loss_func,output_act,metric_type)
+#    grid_search(prot_train_data,smile_train_data,labels_train,prot_test_data,smile_test_data,labels_test,number_cov_layers,number_fc_layers,prot_seq_len,smile_len,prot_dict_size,smile_dict_size,encoding_type,embedding_size,
+#    num_filters,drop_rate,batch,learning_rate,prot_filter_window,prot_filter_window,prot_filter_window,[0],[0],smile_filter_window,smile_filter_window,smile_filter_window,
+#    [0],[0],fc_size,fc_size,fc_size,[0],act_func_conv,fc_act_func,epochs,loss_func,output_act,metric_type)
 
 
+prot_seq_len = 300    # Reduced from 1205
+smile_len = 40        # Reduced from 90
 
+## Protein and Smile Dictionary Length
+prot_dict_size = len(prot_dictionary)
+smile_dict_size = len(smile_dictionary)
 
+## Number of filters of the convolutional layers (reduced number of filters)
+num_filters = [16, 32, 48]
+
+## Size of the embedding vector 
+embedding_size = [0]
+
+## Size of the filter windows
+prot_filter_window = [2, 3]    # Reduced filter sizes
+smile_filter_window = [2, 3]
+
+## Activation functions
+act_func_conv = 'relu'
+fc_act_func = 'relu'
+
+## Drop Rate (reduced options)
+drop_rate = [0.3, 0.5]
+
+## Batch Size (reduced batch size)
+batch = 128
+
+## Number of Epochs (reduced epochs)
+epochs = 100
+
+## FC Layer size (reduced FC sizes)
+fc_size = [32, 64, 128]
+
+## Number of Convolution Layers
+number_cov_layers = 3
+
+## Number of Fully Connected Layers
+number_fc_layers = 3
+
+## Learning Rate (reduced learning rates)
+learning_rate = [0.001, 0.01]
+
+## Loss Functions
+loss_func = 'binary_crossentropy'
+
+## Output Activation Function
+output_act = 'sigmoid'
+
+## Metrics
+metric_type = ['accuracy', sensitivity, specificity, f1_score]
+
+## Encoding type
+encoding_type = 'one_hot'
+
+# Grid search with reduced parameters
+grid_search(
+    prot_train_data, smile_train_data, labels_train,
+    prot_test_data, smile_test_data, labels_test,
+    number_cov_layers, number_fc_layers, prot_seq_len, smile_len, 
+    prot_dict_size, smile_dict_size, encoding_type, embedding_size,
+    num_filters, drop_rate, batch, learning_rate, 
+    prot_filter_window, prot_filter_window, prot_filter_window, 
+    [0], [0], smile_filter_window, smile_filter_window, smile_filter_window,
+    [0], [0], fc_size, fc_size, fc_size, [0],
+    act_func_conv, fc_act_func, epochs, loss_func, output_act, metric_type
+)
+
+    
 
     
     
@@ -420,6 +485,7 @@ if __name__ == '__main__':
 
 
 
+model_checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True, save_freq='epoch')
 
 
 
