@@ -31,8 +31,6 @@ from sklearn.model_selection import GridSearchCV as GSCV
 from sklearn.model_selection import StratifiedKFold as SKF
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-session = tf.Session()
-K.set_session(session)
 
 # Function to save best result
 def save_func(file_path,values):

@@ -31,8 +31,6 @@ from sklearn.model_selection import GridSearchCV as GSCV
 from sklearn.model_selection import StratifiedKFold as SKF
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-
-
 # Function to save best result
 def save_func(file_path,values):
     file=[i.rstrip().split(',') for i in open(file_path).readlines()]
@@ -49,15 +47,6 @@ def sigmoid_to_binary(predicted_labels):
         else:
             binary_labels.append(0)
     return binary_labels
-
-#def weighted_binary_crossentropy(y_true, y_pred):
-#    b_ce = K.binary_crossentropy(y_true, y_pred)
-#    weight_vector = y_true * 0.36 + (1. - y_true) * 0.64
-#    weighted_b_ce = weight_vector * b_ce
-#
-#        # Return the mean error
-#    return K.mean(weighted_b_ce)
-
 
 # Create One Hot Layer
 def OneHot(input_dim=None, input_length=None):
@@ -171,7 +160,6 @@ def metrics_function(sensitivity,specificity,f1,accuracy,auc_value,auprc_value,b
     if auprc_value:
         metrics.append('AUPRC: '+str(auprc))
     return metrics
-
 # Classifier
 def cnn_classifier(prot_data,smile_data,labels,prot_val,smile_val,labels_val,prot_seq_len,smile_len,encoding_type,prot_dict_size,
     embedding_size,smile_dict_size,number_cov_layers,num_filters,prot_filter_1,prot_filter_2,prot_filter_3,prot_filter_4,prot_filter_5,
@@ -191,8 +179,6 @@ def cnn_classifier(prot_data,smile_data,labels,prot_val,smile_val,labels_val,pro
     elif encoding_type=='one_hot':
         protein_embedding=OneHot(input_dim=prot_dict_size, input_length=prot_seq_len)(protein_input)
         smile_embedding=OneHot(input_dim=smile_dict_size,input_length=smile_len)(smile_input)
-
-
     # Convolutional Layers
     # Proteins
     if number_cov_layers==1:
@@ -215,7 +201,6 @@ def cnn_classifier(prot_data,smile_data,labels,prot_val,smile_val,labels_val,pro
         protein_cnn=generate_cov1D(num_filters*3,prot_filter_3,1,'valid',act_func_conv)(protein_cnn)
         protein_cnn=generate_cov1D(num_filters*4,prot_filter_4,1,'valid',act_func_conv)(protein_cnn)
         protein_cnn=generate_cov1D(num_filters*5,prot_filter_5,1,'valid',act_func_conv)(protein_cnn)
-
     # Smiles
     if number_cov_layers==1:
         smile_cnn=generate_cov1D(num_filters,smile_filter_1,1,'valid',act_func_conv)(smile_embedding)
@@ -236,36 +221,28 @@ def cnn_classifier(prot_data,smile_data,labels,prot_val,smile_val,labels_val,pro
         smile_cnn=generate_cov1D(num_filters*2,smile_filter_2,1,'valid',act_func_conv)(smile_cnn)
         smile_cnn=generate_cov1D(num_filters*3,smile_filter_3,1,'valid',act_func_conv)(smile_cnn)
         smile_cnn=generate_cov1D(num_filters*4,smile_filter_4,1,'valid',act_func_conv)(smile_cnn)
-        smile_cnn=generate_cov1D(num_filters*5,smile_filter_5,1,'valid',act_func_conv)(smile_cnn)
-
-
-        
+        smile_cnn=generate_cov1D(num_filters*5,smile_filter_5,1,'valid',act_func_conv)(smile_cnn)       
     # Pooling Layers
     # Proteins
     protein_pool=GlobalMaxPooling1D()(protein_cnn)
     # Smiles
     smile_pool=GlobalMaxPooling1D()(smile_cnn)
-    
     # Merge Features Representations
     features=[protein_pool,smile_pool]
     features=concatenate(features)
-    
     #Fully Connected
     if number_fc_layers==1:
         fc_layer=generate_fc(fc_neurons_1,fc_act_func)(features)
-
     elif number_fc_layers==2:
         fc_layer=generate_fc(fc_neurons_1,fc_act_func)(features)
         fc_layer=Dropout(rate=drop_rate)(fc_layer)
         fc_layer=generate_fc(fc_neurons_2,fc_act_func)(fc_layer)
-
     elif number_fc_layers==3:
         fc_layer=generate_fc(fc_neurons_1,fc_act_func)(features)
         fc_layer=Dropout(rate=drop_rate)(fc_layer)
         fc_layer=generate_fc(fc_neurons_2,fc_act_func)(fc_layer)
         fc_layer=Dropout(rate=drop_rate)(fc_layer)
         fc_layer=generate_fc(fc_neurons_3,fc_act_func)(fc_layer)
-
     elif number_fc_layers==4:
         fc_layer=generate_fc(fc_neurons_1,fc_act_func)(features)
         fc_layer=Dropout(rate=drop_rate)(fc_layer)
@@ -274,29 +251,19 @@ def cnn_classifier(prot_data,smile_data,labels,prot_val,smile_val,labels_val,pro
         fc_layer=generate_fc(fc_neurons_3,fc_act_func)(fc_layer)
         fc_layer=Dropout(rate=drop_rate)(fc_layer)
         fc_layer=generate_fc(fc_neurons_4,fc_act_func)(fc_layer)
-
-    
     # Output Layer
     output=generate_fc(1,output_act)(fc_layer)
-    
     # Model
     model = Model(inputs=[protein_input,smile_input], outputs=output)
-    
     model.compile(optimizer=optimizer_func, loss=loss_func, metrics=metric_type)
-
     #Callbacks
     early_stopping=EarlyStopping(monitor='val_f1_score', min_delta=0, patience=50, verbose=0, mode='max',restore_best_weights=True)
     model_checkpoint=ModelCheckpoint(filepath=path,monitor='val_f1_score', verbose=0, save_best_only=True, save_weights_only=False, mode='max', save_freq='epoch')
-   
-
     if option_validation:
         model.fit(x=[prot_data,smile_data],y=labels,batch_size=batch,epochs=epochs,verbose=2,callbacks=[early_stopping,model_checkpoint],validation_data=([prot_val,smile_val],labels_val),class_weight = {0: 0.36, 1: 0.64})
     else:
         model.fit(x=[prot_data,smile_data],y=labels,batch_size=batch,epochs=epochs,verbose=0)
-    
     return model
-
-
 
 def grid_search(prot_train,smile_train,labels_train,prot_test,smile_test,labels_test,number_cov_layers,number_fc_layers,prot_seq_len,smile_len,prot_dict_size,smile_dict_size,encoding_type,embedding_size,
     num_filters,drop_rate,batch,learning_rate,prot_filter_1_window,prot_filter_2_window,prot_filter_3_window,prot_filter_4_window,prot_filter_5_window,smile_filter_1_window,smile_filter_2_window,smile_filter_3_window,
@@ -359,54 +326,6 @@ if __name__ == '__main__':
    ## Labels
    labels_train=np.load('../Labels/labels_train.npy')
    labels_test=np.load('../Labels/labels_test.npy')
-
-
-
-
-#    # _________________Parameters______________________
-#    # Protein and Smile Length
-#    prot_seq_len=1205
-#    smile_len=90
-#    ## Protein and Smile Dictionary Length
-#    prot_dict_size=len(prot_dictionary)
-#    smile_dict_size=len(smile_dictionary)
-#    ## Number of filters of the convolutional layers
-#    num_filters=[48,32,64,96,128]
-#    ## Size of the embedding vector 
-#    embedding_size=[0]
-#    ## Size of the filter windows
-#    prot_filter_window=[2,3,4,5,6]
-#    smile_filter_window=[2,3,4,5,6]
-#    ## Activation functions
-#    act_func_conv='relu'
-#    fc_act_func='relu'
-#    ## Drop Rate
-#    drop_rate=[0.1,0.3,0.5,0.7]
-#    ## Batch Size
-#    batch=256
-#    ## Number of Epochs
-#    epochs=500
-#    ## FC Layer size
-#    fc_size=[32,64,128,256,512,1024]
-#    ## Number of Convolution Layers
-#    number_cov_layers=3
-#    ## Number of Fully Connected Layers
-#    number_fc_layers=3
-#    ## Learning Rate
-#    learning_rate=[0.0001,0.001,0.01,0.1]
-#    ## Loss Functions
-#    loss_func='binary_crossentropy'
-#    ## Output Activation Function
-#    output_act='sigmoid'
-#    ## Metrics
-#    metric_type=['accuracy',sensitivity,specificity,f1_score]
-#    ## Enconding type
-#    encoding_type='one_hot'
-
-
-#    grid_search(prot_train_data,smile_train_data,labels_train,prot_test_data,smile_test_data,labels_test,number_cov_layers,number_fc_layers,prot_seq_len,smile_len,prot_dict_size,smile_dict_size,encoding_type,embedding_size,
-#    num_filters,drop_rate,batch,learning_rate,prot_filter_window,prot_filter_window,prot_filter_window,[0],[0],smile_filter_window,smile_filter_window,smile_filter_window,
-#    [0],[0],fc_size,fc_size,fc_size,[0],act_func_conv,fc_act_func,epochs,loss_func,output_act,metric_type)
 
 
 prot_seq_len = 300    # Reduced from 1205

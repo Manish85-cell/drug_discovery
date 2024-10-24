@@ -23,15 +23,13 @@ from keras.utils import *
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import RepeatedStratifiedKFold
-from keras.layers.advanced_activations import *
+from keras.layers import *
 from keras.optimizers import *
 from keras.callbacks import *
 from sklearn.model_selection import GridSearchCV as GSCV
 from sklearn.model_selection import StratifiedKFold as SKF
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-session = tf.Session()
-K.set_session(session)
 
 # Generate Fully Connect Layers
 def generate_fc(num_neurons,act_func):
